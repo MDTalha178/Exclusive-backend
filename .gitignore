@@ -5,3 +5,8 @@ venv
 /*.pyc
 /__pycache__/*.pyc
 /migrations/__pycache__
+
+# PyCharm
+.idea/
+*.iws
+out/
