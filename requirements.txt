@@ -2,10 +2,14 @@ asgiref==3.7.2
 backports.zoneinfo==0.2.1
 django==3.2.10
 django-cors-headers==4.3.1
-djangorestframework==3.14.0
+djangorestframework==3.11.2
 psycopg2-binary==2.9.9
 python-dotenv==1.0.0
 pytz==2023.3.post1
 sqlparse==0.4.4
 typing_extensions==4.8.0
 tzdata==2023.3
+drf-yasg==1.17.1
+boto3==1.33.10
+django-storages==1.14.2
+djangorestframework-simplejwt==5.3.1
