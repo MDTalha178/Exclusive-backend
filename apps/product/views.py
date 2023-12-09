@@ -10,8 +10,8 @@ from rest_framework.parsers import JSONParser, FormParser, MultiPartParser
 
 # Create your views here.
 from apps.common.permissions import IsTokenValid
-from apps.product.models import Product
-from apps.product.serializer import GetProductSerializer, CreateProductSerializer
+from apps.product.models import Product, ProductCategory
+from apps.product.serializer import GetProductSerializer, CreateProductSerializer, ProductCategorySerializer
 
 
 class ProductViewSet(ModelViewSet):
@@ -78,3 +78,25 @@ class ProductViewSet(ModelViewSet):
             instance.delete()
             return custom_response(status=status.HTTP_200_OK, detail=None, data=None)
         return custom_response(status.HTTP_204_NO_CONTENT, detail=None, data=None)
+
+
+class ProductCategoryViewSet(ModelViewSet):
+    """
+    this class is used to get a product category
+    """
+    http_method_names = ('get',)
+    serializer_class = ProductCategorySerializer
+    queryset = ProductCategory
+
+    def get_queryset(self):
+        """
+        this method is used to get a product category queryset
+        """
+        queryset = self.queryset.objects.filter(status=1)
+        return queryset
+
+    def list(self, request, *args, **kwargs):
+        serializer = self.serializer_class(self.get_queryset(), many=True)
+        if serializer:
+            return custom_response(status=status.HTTP_200_OK, detail=None, data=serializer.data)
+        return custom_error_response(status.HTTP_204_NO_CONTENT, detail=None,data=None)

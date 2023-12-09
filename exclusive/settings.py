@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'corsheaders',
     'rest_framework_simplejwt',
     'storages',
     'drf_yasg',
@@ -95,6 +96,7 @@ DATABASES = {
 }
 
 AUTH_USER_MODEL = 'authentication.User'
+CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_METHODS = (
     'DELETE',
     'GET',

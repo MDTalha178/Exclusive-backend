@@ -10,6 +10,7 @@ class GetProductCategoryDetails(serializers.ModelSerializer):
     """
     this method is used to get product category details
     """
+
     class Meta:
         model = ProductCategory
         fields = '__all__'
@@ -88,3 +89,9 @@ class CreateProductSerializer(serializers.ModelSerializer):
         model = Product
         fields = ('product_name', 'product_description', 'price', 'product_quantity', 'product_image',
                   'is_in_stock', 'product_active', 'product_category')
+
+
+class ProductCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProductCategory
+        fields = '__all__'
