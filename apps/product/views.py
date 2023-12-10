@@ -22,7 +22,7 @@ class ProductViewSet(ModelViewSet):
     queryset = Product
     serializer_class = GetProductSerializer
     parser_classes = (JSONParser, FormParser, MultiPartParser)
-    permission_classes = (IsAuthenticated, IsTokenValid,)
+    # permission_classes = (IsAuthenticated, IsTokenValid,)
 
     def get_queryset(self):
         """
