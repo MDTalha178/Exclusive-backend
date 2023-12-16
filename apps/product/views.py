@@ -3,13 +3,15 @@ this used for views
 """
 
 from rest_framework.permissions import IsAuthenticated
-from django.db.models import F
+from django.db.models import F, Q
 from apps.authentication.commonViewSet import ModelViewSet, custom_response, custom_error_response
 from rest_framework import status
 from rest_framework.parsers import JSONParser, FormParser, MultiPartParser
+from django.db.models import Count, Sum
 
 # Create your views here.
 from apps.common.permissions import IsTokenValid
+from apps.common.utils import get_total_bill
 from apps.product.models import Product, ProductCategory, CartItem
 from apps.product.serializer import GetProductSerializer, CreateProductSerializer, ProductCategorySerializer, \
     AddToCartSerializer, GetCartItemSerializer
@@ -118,7 +120,9 @@ class CartViewSet(ModelViewSet):
         this method is used to get cart item
         """
         login_user = self.request.user
-        queryset = self.queryset.objects.filter(user_id=login_user.id)
+        queryset = self.queryset.objects.filter(user_id=login_user.id).annotate(
+            product_image_url=F('product__product_images_set__product_images')
+        )
         return queryset
 
     def create(self, request, *args, **kwargs):
@@ -135,7 +139,9 @@ class CartViewSet(ModelViewSet):
         """
         this method is use dto get a cart items
         """
-        serializer = GetCartItemSerializer(self.get_queryset(), context={'user', self.request.user}, many=True)
+        total_bill = get_total_bill(request.user.id)
+        serializer = GetCartItemSerializer(self.get_queryset(), context={'user': self.request.user,
+                                                                         'total_billed': total_bill}, many=True)
         if serializer:
             return custom_response(status=status.HTTP_200_OK, detail=None, data=serializer.data)
         return custom_error_response(status=status.HTTP_204_NO_CONTENT, detail=None, data=None)

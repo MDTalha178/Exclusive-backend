@@ -137,6 +137,47 @@ class GetCartItemSerializer(serializers.ModelSerializer):
     this class is used to get cart item
     """
     product_details = serializers.SerializerMethodField()
+    product_image = serializers.SerializerMethodField()
+    totalcart = serializers.SerializerMethodField()
+    subtotal = serializers.SerializerMethodField()
+    total_billed = serializers.SerializerMethodField()
+
+    def get_total_billed(self, obj):
+        """
+        this method is use dto get total billed
+        """
+        total_billed = 0
+        if 'total_billed' in self.context and self.context['total_billed']:
+            total_billed = self.context['total_billed']
+        return total_billed
+
+
+    @staticmethod
+    def get_subtotal(obj):
+        """
+        this method is used to return total bill value
+        """
+        subtotal = obj.quantity * obj.product.price
+        return subtotal
+
+    @staticmethod
+    def get_totalcart(obj):
+        """
+        this method is used to get total cart method
+        """
+        totalcart = CartItem.objects.filter(user_id=obj.user.id).count()
+        return totalcart
+
+
+    @staticmethod
+    def get_product_image(obj):
+        """
+        get product image
+        """
+        product_image = None
+        if hasattr(obj, 'product_image_url') and obj.product_image_url:
+            product_image = AWS_BASE_URL + str(obj.product_image_url)
+        return product_image
 
     @staticmethod
     def get_product_details(obj):
@@ -153,4 +194,4 @@ class GetCartItemSerializer(serializers.ModelSerializer):
         this method is used to get product details
         """
         model = CartItem
-        fields = ('product_details', 'quantity',)
+        fields = ('product_details', 'product_image', 'quantity', 'subtotal', 'totalcart', 'total_billed',)
