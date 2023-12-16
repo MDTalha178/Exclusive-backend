@@ -9,6 +9,7 @@ from django.db import models
 
 # Create your models here.
 from apps.authentication.models import User
+from apps.common.constant import AWS_BASE_URL
 
 
 class ProductCategory(models.Model):
@@ -55,7 +56,7 @@ class ProductImages(models.Model):
     def get_image_url(self):
         product_images = None
         if self.product_images:
-            product_images = 'https://exclusive-product.s3.amazonaws.com/' + str(self.product_images)
+            product_images = AWS_BASE_URL + str(self.product_images)
         return product_images
 
     class Meta:
@@ -63,3 +64,20 @@ class ProductImages(models.Model):
         class meta for product images
         """
         db_table = 'product_images'
+
+
+class CartItem(models.Model):
+    """
+    this model class is used to create a data for cart
+    """
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, null=True, blank=True)
+    quantity = models.IntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        """
+        this metaclass for db name
+        """
+        db_table = "cart_item"

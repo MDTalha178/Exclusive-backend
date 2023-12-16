@@ -9,13 +9,13 @@ from django.urls import path, include
 from rest_framework import routers
 
 # Local imports
-from apps.product.views import ProductViewSet, ProductCategoryViewSet
+from apps.product.views import ProductViewSet, ProductCategoryViewSet, CartViewSet
 
 router = routers.DefaultRouter()
 
 router.register('product', ProductViewSet, basename='product')
 router.register('product-category', ProductCategoryViewSet, basename='product_category')
-
+router.register('cart', CartViewSet, basename='cart')
 urlpatterns = [
     path(r'product/', include(router.urls)),
 ]

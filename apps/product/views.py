@@ -10,8 +10,9 @@ from rest_framework.parsers import JSONParser, FormParser, MultiPartParser
 
 # Create your views here.
 from apps.common.permissions import IsTokenValid
-from apps.product.models import Product, ProductCategory
-from apps.product.serializer import GetProductSerializer, CreateProductSerializer, ProductCategorySerializer
+from apps.product.models import Product, ProductCategory, CartItem
+from apps.product.serializer import GetProductSerializer, CreateProductSerializer, ProductCategorySerializer, \
+    AddToCartSerializer, GetCartItemSerializer
 
 
 class ProductViewSet(ModelViewSet):
@@ -22,6 +23,7 @@ class ProductViewSet(ModelViewSet):
     queryset = Product
     serializer_class = GetProductSerializer
     parser_classes = (JSONParser, FormParser, MultiPartParser)
+
     # permission_classes = (IsAuthenticated, IsTokenValid,)
 
     def get_queryset(self):
@@ -99,4 +101,42 @@ class ProductCategoryViewSet(ModelViewSet):
         serializer = self.serializer_class(self.get_queryset(), many=True)
         if serializer:
             return custom_response(status=status.HTTP_200_OK, detail=None, data=serializer.data)
-        return custom_error_response(status.HTTP_204_NO_CONTENT, detail=None,data=None)
+        return custom_error_response(status.HTTP_204_NO_CONTENT, detail=None, data=None)
+
+
+class CartViewSet(ModelViewSet):
+    """
+    this class is used to get add delete data from cart
+    """
+    http_method_names = ('get', 'post')
+    serializer_class = AddToCartSerializer
+    queryset = CartItem
+    permission_classes = (IsAuthenticated, IsTokenValid,)
+
+    def get_queryset(self):
+        """
+        this method is used to get cart item
+        """
+        login_user = self.request.user
+        queryset = self.queryset.objects.filter(user_id=login_user.id)
+        return queryset
+
+    def create(self, request, *args, **kwargs):
+        """"
+        this method is used to create item into cart
+        """
+        serializer = self.serializer_class(data=request.data, context={'user': request.user})
+        if serializer.is_valid():
+            serializer.save()
+            return custom_response(status=status.HTTP_201_CREATED, detail=None, data=None)
+        return custom_error_response(status=status.HTTP_400_BAD_REQUEST, detail=None, data=serializer.errors)
+
+    def list(self, request, *args, **kwargs):
+        """
+        this method is use dto get a cart items
+        """
+        serializer = GetCartItemSerializer(self.get_queryset(), context={'user', self.request.user}, many=True)
+        if serializer:
+            return custom_response(status=status.HTTP_200_OK, detail=None, data=serializer.data)
+        return custom_error_response(status=status.HTTP_204_NO_CONTENT, detail=None, data=None)
+

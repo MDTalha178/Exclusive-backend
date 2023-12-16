@@ -3,7 +3,7 @@ from datetime import datetime
 from rest_framework import serializers
 
 from apps.common.constant import AWS_BASE_URL
-from apps.product.models import Product, ProductImages, ProductCategory
+from apps.product.models import Product, ProductImages, ProductCategory, CartItem
 
 
 class GetProductCategoryDetails(serializers.ModelSerializer):
@@ -95,3 +95,62 @@ class ProductCategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = ProductCategory
         fields = '__all__'
+
+
+class AddToCartSerializer(serializers.ModelSerializer):
+    """
+    this class is used to create a data for cart
+    """
+    product = serializers.PrimaryKeyRelatedField(
+        required=True, allow_null=False, allow_empty=False, queryset=Product.objects.filter())
+    quantity = serializers.IntegerField(
+        required=False, allow_null=True, default=1
+    )
+
+    def create(self, validated_data):
+        """
+        this method is used to create a cart data
+        """
+        try:
+            login_user = None
+            if 'user' in self.context and self.context['user']:
+                login_user = self.context['user']
+            if not login_user:
+                raise serializers.ValidationError({'UnAuthorized': 'Please to login add item in to cart'})
+            validated_data['user_id'] = login_user.id
+            cart_obj = CartItem.objects.update_or_create(
+                product_id=validated_data['product'].id, user_id=login_user.id,
+                defaults={'quantity': validated_data['quantity']}
+            )
+            return cart_obj
+        except Exception as e:
+            logging.error(e)
+            raise serializers.ValidationError(e)
+
+    class Meta:
+        model = CartItem
+        fields = ('product', 'quantity',)
+
+
+class GetCartItemSerializer(serializers.ModelSerializer):
+    """
+    this class is used to get cart item
+    """
+    product_details = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_product_details(obj):
+        """
+        this method is used to return product details
+        """
+        product_details = None
+        if obj.product:
+            product_details = GetProductSerializer(obj.product, many=False).data
+        return product_details
+
+    class Meta:
+        """
+        this method is used to get product details
+        """
+        model = CartItem
+        fields = ('product_details', 'quantity',)
