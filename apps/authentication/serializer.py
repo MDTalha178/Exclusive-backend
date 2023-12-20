@@ -98,3 +98,11 @@ class LoginSerializer(serializers.Serializer):
         """
         model = User
         fields = ('id', 'email', 'password')
+
+
+class RefreshTokenSerializer(serializers.Serializer):
+    """
+    this class is sued to get refresh token
+    """
+    refresh_token = serializers.CharField(
+        required=True, allow_null=False, allow_blank=False, error_messages={'Token': 'Refresh token is required!'})

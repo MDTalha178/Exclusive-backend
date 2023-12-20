@@ -9,7 +9,7 @@ from apps.authentication.commonViewSet import ModelViewSet, custom_response, cus
 
 # Create your views here.
 from apps.authentication.models import User
-from apps.authentication.serializer import SignupSerializer, LoginSerializer
+from apps.authentication.serializer import SignupSerializer, LoginSerializer, RefreshTokenSerializer
 
 
 class SignupViewSet(ModelViewSet):
@@ -58,3 +58,25 @@ class LoginViewSet(ModelViewSet):
             return custom_response(status=status.HTTP_200_OK, detail=None, data=response)
         return custom_error_response(status=status.HTTP_401_UNAUTHORIZED, detail=None, data=serializer.errors)
 
+
+class RefreshTokenViewSet(ModelViewSet):
+    """
+    this class is sued to get refresh token
+    """
+    http_method_names = ('post',)
+    serializer_class = RefreshTokenSerializer
+
+    def create(self, request, *args, **kwargs):
+        refresh_token = request.data.get('refresh_token')
+        if not refresh_token:
+            return custom_error_response(
+                status=status.HTTP_400_BAD_REQUEST, detail=None, data='Refresh token is required'
+            )
+        try:
+            refresh_token = RefreshToken(refresh_token)
+            access_token = str(refresh_token.access_token)
+            new_refresh_token = str(refresh_token)
+            return custom_response(status=status.HTTP_200_OK, detail=None, data=
+            {'access_token': access_token, 'refresh_token': new_refresh_token})
+        except Exception as e:
+            return custom_response(status=status.HTTP_401_UNAUTHORIZED, detail={'detail': str(e)}, data=None)
