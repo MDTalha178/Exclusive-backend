@@ -132,7 +132,7 @@ class CartViewSet(ModelViewSet):
         serializer = self.serializer_class(data=request.data, context={'user': request.user})
         if serializer.is_valid():
             serializer.save()
-            return custom_response(status=status.HTTP_201_CREATED, detail=None, data=None)
+            return custom_response(status=status.HTTP_201_CREATED, detail=None, data=serializer.data)
         return custom_error_response(status=status.HTTP_400_BAD_REQUEST, detail=None, data=serializer.errors)
 
     def list(self, request, *args, **kwargs):

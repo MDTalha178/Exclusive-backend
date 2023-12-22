@@ -9,7 +9,8 @@ from apps.authentication.commonViewSet import ModelViewSet, custom_response, cus
 
 # Create your views here.
 from apps.authentication.models import User
-from apps.authentication.serializer import SignupSerializer, LoginSerializer, RefreshTokenSerializer
+from apps.authentication.serializer import SignupSerializer, LoginSerializer, RefreshTokenSerializer, \
+    VerifyOtpSerializer
 
 
 class SignupViewSet(ModelViewSet):
@@ -80,3 +81,21 @@ class RefreshTokenViewSet(ModelViewSet):
             {'access_token': access_token, 'refresh_token': new_refresh_token})
         except Exception as e:
             return custom_response(status=status.HTTP_401_UNAUTHORIZED, detail={'detail': str(e)}, data=None)
+
+
+class VerifyOTPViewSet(ModelViewSet):
+    """
+    this class is used to verify otp
+    """
+    http_method_names = ('post',)
+    serializer_class = VerifyOtpSerializer
+
+    def create(self, request, *args, **kwargs):
+        try:
+            serializer = self.serializer_class(data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                return custom_response(status=status.HTTP_200_OK, detail=None, data=None)
+            return custom_error_response(status=status.HTTP_400_BAD_REQUEST, detail=None, data=serializer.errors)
+        except Exception as e:
+            return custom_error_response(status=status.HTTP_400_BAD_REQUEST, detail=None, data=e)

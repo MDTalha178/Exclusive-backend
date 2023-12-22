@@ -2,6 +2,8 @@
 This file is used serialized a data
 """
 # third party imports
+import logging
+
 from rest_framework import serializers
 
 from apps.authentication.models import User
@@ -106,3 +108,37 @@ class RefreshTokenSerializer(serializers.Serializer):
     """
     refresh_token = serializers.CharField(
         required=True, allow_null=False, allow_blank=False, error_messages={'Token': 'Refresh token is required!'})
+
+
+class VerifyOtpSerializer(serializers.ModelSerializer):
+    """
+    this serializer class is used to verify otp
+    """
+    email = serializers.EmailField(
+        required=True, allow_blank=False, allow_null=False, error_messages={'email': "EMAIL_REQUIRED"})
+    otp = serializers.CharField(
+        required=True, allow_null=False, allow_blank=False, error_messages={'OTP': 'OTP_REQUIRED'}
+    )
+
+    def validate(self, attrs):
+        if not User.objects.filter(email__iexact=attrs.get('email')).exists():
+            raise serializers.ValidationError({'INVALID_EMAIL': "INVALID_EMAIL"})
+        if not User.objects.filter(email__iexact=attrs.get('email'), email_verification_otp=attrs.get('otp')).exists():
+            raise serializers.ValidationError({'INVALID_OTP': 'INVALID_OTP'})
+        return attrs
+
+    def create(self, validated_data):
+        try:
+            user_obj = User.objects.filter(email__iexact=validated_data['email']).first()
+            if not user_obj:
+                raise serializers.ValidationError({'INVALID_EMAIL': "INVALID_EMAIL"})
+            user_obj.email_verified = True
+            user_obj.save()
+            return user_obj
+        except Exception as e:
+            logging.error(e)
+            raise serializers.ValidationError(e)
+
+    class Meta:
+        model = User
+        fields = ('email', 'otp')

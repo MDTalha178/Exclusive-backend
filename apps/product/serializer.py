@@ -1,6 +1,7 @@
 import logging
 from datetime import datetime
 from rest_framework import serializers
+from django.db.models import F
 
 from apps.common.constant import AWS_BASE_URL
 from apps.product.models import Product, ProductImages, ProductCategory, CartItem
@@ -120,7 +121,7 @@ class AddToCartSerializer(serializers.ModelSerializer):
             validated_data['user_id'] = login_user.id
             cart_obj = CartItem.objects.update_or_create(
                 product_id=validated_data['product'].id, user_id=login_user.id,
-                defaults={'quantity': validated_data['quantity']}
+                defaults={'quantity': F(validated_data['quantity'] + 1)}
             )
             return cart_obj
         except Exception as e:
