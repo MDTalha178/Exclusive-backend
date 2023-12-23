@@ -25,8 +25,6 @@ def send_otp(data):
     this method is used to send an OTP on email
     :param data
     """
-    six_digit_otp = generate_otp()
-    data['otp'] = six_digit_otp
     email_data = {
         'subject': 'Exclusive verify email! OTP',
         'to_email': data['email'],
