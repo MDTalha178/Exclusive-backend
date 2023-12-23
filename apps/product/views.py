@@ -3,11 +3,10 @@ this used for views
 """
 
 from rest_framework.permissions import IsAuthenticated
-from django.db.models import F, Q
+from django.db.models import F
 from apps.authentication.commonViewSet import ModelViewSet, custom_response, custom_error_response
 from rest_framework import status
 from rest_framework.parsers import JSONParser, FormParser, MultiPartParser
-from django.db.models import Count, Sum
 
 # Create your views here.
 from apps.common.permissions import IsTokenValid
@@ -110,7 +109,7 @@ class CartViewSet(ModelViewSet):
     """
     this class is used to get add delete data from cart
     """
-    http_method_names = ('get', 'post')
+    http_method_names = ('get', 'post', 'delete',)
     serializer_class = AddToCartSerializer
     queryset = CartItem
     permission_classes = (IsAuthenticated, IsTokenValid,)
@@ -131,8 +130,9 @@ class CartViewSet(ModelViewSet):
         """
         serializer = self.serializer_class(data=request.data, context={'user': request.user})
         if serializer.is_valid():
-            serializer.save()
-            return custom_response(status=status.HTTP_201_CREATED, detail=None, data=serializer.data)
+            cart_obj = serializer.save()
+            data = GetCartItemSerializer(cart_obj, many=False).data
+            return custom_response(status=status.HTTP_201_CREATED, detail=None, data=data)
         return custom_error_response(status=status.HTTP_400_BAD_REQUEST, detail=None, data=serializer.errors)
 
     def list(self, request, *args, **kwargs):
@@ -146,3 +146,12 @@ class CartViewSet(ModelViewSet):
             return custom_response(status=status.HTTP_200_OK, detail=None, data=serializer.data)
         return custom_error_response(status=status.HTTP_204_NO_CONTENT, detail=None, data=None)
 
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if not instance:
+            return custom_error_response(status=status.HTTP_400_BAD_REQUEST, detail=None, data='Invalid ID')
+        instance.delete()
+        total_bill = get_total_bill(request.user.id)
+        serializer = GetCartItemSerializer(self.get_queryset(), context={'user': self.request.user,
+                                                                         'total_billed': total_bill}, many=True)
+        return custom_response(status=status.HTTP_200_OK, detail=None, data=serializer.data)

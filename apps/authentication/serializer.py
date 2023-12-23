@@ -7,6 +7,7 @@ import logging
 from rest_framework import serializers
 
 from apps.authentication.models import User
+from apps.common.utils import send_otp, send_welcome_email
 
 
 class SignupSerializer(serializers.ModelSerializer):
@@ -56,6 +57,14 @@ class SignupSerializer(serializers.ModelSerializer):
         user_obj = User.objects.create(**validated_data)
         user_obj.set_password(password)
         user_obj.save()
+        # here we will send an OTP to verify their email
+        data = {
+            "email": user_obj.email,
+            "full_name": user_obj.first_name + " " + user_obj.last_name
+        }
+        send_otp(data)
+        # here we are sending welcome email
+        send_welcome_email(data)
         return user_obj
 
     class Meta:

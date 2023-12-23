@@ -119,9 +119,9 @@ class AddToCartSerializer(serializers.ModelSerializer):
             if not login_user:
                 raise serializers.ValidationError({'UnAuthorized': 'Please to login add item in to cart'})
             validated_data['user_id'] = login_user.id
-            cart_obj = CartItem.objects.update_or_create(
+            cart_obj, _ = CartItem.objects.update_or_create(
                 product_id=validated_data['product'].id, user_id=login_user.id,
-                defaults={'quantity': F(validated_data['quantity'] + 1)}
+                defaults={'quantity': validated_data['quantity']}
             )
             return cart_obj
         except Exception as e:
