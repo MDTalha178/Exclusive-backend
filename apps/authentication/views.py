@@ -3,6 +3,7 @@ This file is used for signup viewset
 """
 # Third party imports
 from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
 # Local Import
 from apps.authentication.commonViewSet import ModelViewSet, custom_response, custom_error_response
@@ -10,7 +11,8 @@ from apps.authentication.commonViewSet import ModelViewSet, custom_response, cus
 # Create your views here.
 from apps.authentication.models import User
 from apps.authentication.serializer import SignupSerializer, LoginSerializer, RefreshTokenSerializer, \
-    VerifyOtpSerializer
+    VerifyOtpSerializer, EditSerializer, UserDetailsSerializer
+from apps.common.permissions import IsTokenValid
 
 
 class SignupViewSet(ModelViewSet):
@@ -56,6 +58,7 @@ class LoginViewSet(ModelViewSet):
             response = dict()
             response['access_token'] = str(refresh_token.access_token)
             response['refresh_token'] = str(refresh_token)
+            response['user_id'] = str(user_obj.id)
             return custom_response(status=status.HTTP_200_OK, detail=None, data=response)
         return custom_error_response(status=status.HTTP_401_UNAUTHORIZED, detail=None, data=serializer.errors)
 
@@ -99,3 +102,43 @@ class VerifyOTPViewSet(ModelViewSet):
             return custom_error_response(status=status.HTTP_400_BAD_REQUEST, detail=None, data=serializer.errors)
         except Exception as e:
             return custom_error_response(status=status.HTTP_400_BAD_REQUEST, detail=None, data=e)
+
+
+class UserDetailsViewSet(ModelViewSet):
+    """
+    this is used to update user details of get user details
+    """
+    http_method_names = ('get', 'put',)
+    serializer_class = UserDetailsSerializer
+    queryset = User
+    permission_classes = (IsAuthenticated, IsTokenValid,)
+
+    def get_queryset(self):
+        login_user_id = self.request.user.id
+        queryset = self.queryset.objects.filter(id=login_user_id)
+        return queryset
+
+    def list(self, request, *args, **kwargs):
+        serializer = self.serializer_class(self.get_queryset(), many=True)
+        if serializer:
+            return custom_response(status=status.HTTP_200_OK, detail=None, data=serializer.data)
+        return custom_error_response(status=status.HTTP_400_BAD_REQUEST, detail=None, data=serializer.errors)
+
+    def retrieve(self, request, *args, **kwargs):
+        serializer = self.serializer_class(self.get_object(), many=False)
+        if serializer:
+            return custom_response(status=status.HTTP_200_OK, detail=None, data=serializer.data)
+        return custom_error_response(status=status.HTTP_400_BAD_REQUEST, detail=None, data=serializer.errors)
+
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if not instance:
+            return custom_error_response(status=status.HTTP_400_BAD_REQUEST, detail=None, data={
+                'INVALID_ID': "ID_NOT_FOUND"})
+        serializer = EditSerializer(data=request.data, context={'instance': instance})
+        if serializer.is_valid():
+            user_obj = serializer.update(instance, request.data)
+            user_data = UserDetailsSerializer(user_obj, many=False).data
+            return custom_response(status=status.HTTP_200_OK, detail=None, data=user_data)
+        return custom_error_response(status=status.HTTP_400_BAD_REQUEST, detail=None, data=serializer.errors)
+

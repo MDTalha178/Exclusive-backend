@@ -154,3 +154,42 @@ class VerifyOtpSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('email', 'otp')
+
+
+class EditSerializer(serializers.ModelSerializer):
+    """
+    this serializer class is used to update a user info
+    """
+    first_name = serializers.CharField(required=True, allow_null=False, allow_blank=False)
+    last_name = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    phone = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+
+    def validate(self, attrs):
+        if User.objects.filter(phone=attrs.get('phone')).exists():
+            raise serializers.ValidationError({'PHONE_NUMBER': "PHONE_NUMBER_ALREADY_EXISTS"})
+        return attrs
+
+    def update(self, instance, validated_data):
+        try:
+            user_obj = None
+            if 'instance' in self.context and self.context['instance']:
+                user_obj = self.context['instance']
+            User.objects.filter(id=user_obj.id).update(
+                first_name=validated_data['first_name'], last_name=validated_data['last_name'],
+                phone=validated_data['phone']
+            )
+            user_obj = User.objects.get(id=instance.id)
+            return user_obj
+        except Exception as e:
+            logging.error(e)
+            raise serializers.ValidationError(e)
+
+    class Meta:
+        model = User
+        fields = ('last_name', 'phone', 'first_name', )
+
+
+class UserDetailsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('first_name', 'last_name', 'email', 'phone', 'email_verified',)
