@@ -11,9 +11,9 @@ from rest_framework.parsers import JSONParser, FormParser, MultiPartParser
 # Create your views here.
 from apps.common.permissions import IsTokenValid
 from apps.common.utils import get_total_bill
-from apps.product.models import Product, ProductCategory, CartItem
+from apps.product.models import Product, ProductCategory, CartItem, WishListItem
 from apps.product.serializer import GetProductSerializer, CreateProductSerializer, ProductCategorySerializer, \
-    AddToCartSerializer, GetCartItemSerializer
+    AddToCartSerializer, GetCartItemSerializer, WishListItemSerializer, GetWishListItemSerializer
 
 
 class ProductViewSet(ModelViewSet):
@@ -155,3 +155,37 @@ class CartViewSet(ModelViewSet):
         serializer = GetCartItemSerializer(self.get_queryset(), context={'user': self.request.user,
                                                                          'total_billed': total_bill}, many=True)
         return custom_response(status=status.HTTP_200_OK, detail=None, data=serializer.data)
+
+
+class WishListViewSet(ModelViewSet):
+    """
+    this class is used to  add data into wishlist
+    """
+    http_method_names = ('post', 'get',)
+    queryset = WishListItem
+    serializer_class = WishListItemSerializer
+    permission_classes = (IsAuthenticated, IsTokenValid,)
+
+    def get_queryset(self):
+        """
+        this method is used to get wishlist data
+        """
+        queryset = self.queryset.objects.select_related('product').filter(
+            user_id=self.request.user.id).order_by('-created_at')
+        return queryset
+
+    def create(self, request, *args, **kwargs):
+        """
+        this method is used to create a wishlist data
+        """
+        serializer = self.serializer_class(data=request.data, context={'user': request.user})
+        if serializer.is_valid():
+            serializer.save()
+            return custom_response(status=status.HTTP_200_OK, detail=None, data=serializer.data)
+        return custom_error_response(status=status.HTTP_400_BAD_REQUEST, detail=None, data=serializer.errors)
+
+    def list(self, request, *args, **kwargs):
+        serializer = GetWishListItemSerializer(self.get_queryset(), many=True)
+        if serializer:
+            return custom_response(status=status.HTTP_200_OK, detail=None, data=serializer.data)
+        return custom_error_response(status=status.HTTP_204_NO_CONTENT, detail=None, data=None)

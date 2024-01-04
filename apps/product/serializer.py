@@ -4,7 +4,7 @@ from rest_framework import serializers
 from django.db.models import F
 
 from apps.common.constant import AWS_BASE_URL
-from apps.product.models import Product, ProductImages, ProductCategory, CartItem
+from apps.product.models import Product, ProductImages, ProductCategory, CartItem, WishListItem
 
 
 class GetProductCategoryDetails(serializers.ModelSerializer):
@@ -152,7 +152,6 @@ class GetCartItemSerializer(serializers.ModelSerializer):
             total_billed = self.context['total_billed']
         return total_billed
 
-
     @staticmethod
     def get_subtotal(obj):
         """
@@ -168,7 +167,6 @@ class GetCartItemSerializer(serializers.ModelSerializer):
         """
         totalcart = CartItem.objects.filter(user_id=obj.user.id).count()
         return totalcart
-
 
     @staticmethod
     def get_product_image(obj):
@@ -196,3 +194,60 @@ class GetCartItemSerializer(serializers.ModelSerializer):
         """
         model = CartItem
         fields = ('product_details', 'product_image', 'quantity', 'subtotal', 'totalcart', 'total_billed',)
+
+
+class WishListItemSerializer(serializers.ModelSerializer):
+    """
+    this class is used to wishlist serializer
+    """
+    product = serializers.PrimaryKeyRelatedField(
+        required=True, allow_null=False, allow_empty=False, queryset=Product.objects.filter())
+
+    def create(self, validated_data):
+        """
+        this method is used to create a wishlist data
+        :param validated_data
+        """
+        try:
+            login_user = None
+            if 'user' in self.context and self.context['user']:
+                login_user = self.context['user']
+            if not login_user:
+                raise serializers.ValidationError({'UnAuthorized': 'Please to login add item in to cart'})
+            validated_data['user_id'] = login_user.id
+            cart_obj, _ = WishListItem.objects.update_or_create(
+                product_id=validated_data['product'].id, user_id=login_user.id,
+            )
+            return cart_obj
+        except Exception as e:
+            logging.error(e)
+            raise serializers.ValidationError(e)
+
+    class Meta:
+        """
+        metaclass for wishlist
+        """
+        model = WishListItem
+        fields = ('product',)
+
+
+class GetWishListItemSerializer(serializers.ModelSerializer):
+    """
+    this serializer class is used to get wishlist data
+    """
+    product_details = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_product_details(obj):
+        """
+        this method is used to get product details
+        """
+        product_details = None
+        if obj.product:
+            product_details = GetProductSerializer(obj.product, many=False).data
+        return product_details
+
+    class Meta:
+        model = WishListItem
+        fields = ('id', 'product_details',)
+

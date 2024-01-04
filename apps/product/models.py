@@ -81,3 +81,21 @@ class CartItem(models.Model):
         this metaclass for db name
         """
         db_table = "cart_item"
+
+
+class WishListItem(models.Model):
+    """
+    this class is used to store a wishlist data
+    """
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        """
+        this metaclass for db name
+        """
+        db_table = "wishlist_item"
+
+
