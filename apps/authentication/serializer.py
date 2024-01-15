@@ -6,6 +6,7 @@ import logging
 
 from rest_framework import serializers
 
+from apps.account.serializer import GetUserProfileSerializer
 from apps.authentication.models import User
 from apps.common.utils import send_otp, send_welcome_email, generate_otp
 
@@ -190,6 +191,17 @@ class EditSerializer(serializers.ModelSerializer):
 
 
 class UserDetailsSerializer(serializers.ModelSerializer):
+    user_profile = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_user_profile(obj):
+        user_profile = None
+        if obj:
+            user_profile_obj = obj.user_profile_set.filter(user_id=obj.id).first()
+            if user_profile_obj:
+                user_profile = GetUserProfileSerializer(user_profile_obj, many=False).data
+        return user_profile
+
     class Meta:
         model = User
-        fields = ('first_name', 'last_name', 'email', 'phone', 'email_verified',)
+        fields = ('first_name', 'last_name', 'email', 'phone', 'email_verified', 'user_profile',)

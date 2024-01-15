@@ -3,6 +3,7 @@ this used for views
 """
 
 from rest_framework.permissions import IsAuthenticated
+from rest_framework import filters
 from django.db.models import F
 from apps.authentication.commonViewSet import ModelViewSet, custom_response, custom_error_response
 from rest_framework import status
@@ -24,7 +25,8 @@ class ProductViewSet(ModelViewSet):
     queryset = Product
     serializer_class = GetProductSerializer
     parser_classes = (JSONParser, FormParser, MultiPartParser)
-
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['product_name', 'product_category__name']
     # permission_classes = (IsAuthenticated, IsTokenValid,)
 
     def get_queryset(self):
@@ -41,6 +43,7 @@ class ProductViewSet(ModelViewSet):
             queryset = queryset.filter(product_owner_id=user_id)
         else:
             queryset = queryset.filter(product_active=True)
+        queryset = self.filter_queryset(queryset)
         return queryset
 
     def create(self, request, *args, **kwargs):

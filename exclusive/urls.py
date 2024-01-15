@@ -39,6 +39,7 @@ urlpatterns = [
     path('api/v1/', include('apps.authentication.urls')),
     path('api/v1/', include('apps.product.urls')),
     path('api/v1/', include('apps.common.urls')),
+    path('api/v1/', include('apps.account.urls')),
     path('apidoc', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
 ]+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 

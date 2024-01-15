@@ -1,0 +1,33 @@
+import uuid
+
+from django.db import models
+
+
+# Create your models here.
+from apps.authentication.models import User
+from apps.common.constant import AWS_BASE_URL
+
+
+class UserProfile(models.Model):
+    """
+    this class is used to store a user profile data
+    """
+    id = models.UUIDField(primary_key=True, editable=False, default=uuid.uuid4)
+    user_profile = models.FileField(upload_to='user_profile', null=True, blank=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, blank=False, null=False, related_name='user_profile_set',)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def profile(self):
+        """
+        get user profile
+        """
+        user_profile = self.user_profile
+        user_profile_url = AWS_BASE_URL + str(user_profile)
+        return user_profile_url
+
+    class Meta:
+        """
+        this class is used for user_profile
+        """
+        db_table = 'user_profile'
