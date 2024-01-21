@@ -69,6 +69,7 @@ class UserAddressSerializer(serializers.ModelSerializer):
                     'latitude': validated_data['latitude'], 'longitude': validated_data['longitude'], 'street_address':
                         validated_data['street_address'], 'town': validated_data['town'],
                     'phone': validated_data['phone'],
+                    'landmark':validated_data['landmark'],
                     'pincode': validated_data['pincode'], 'is_default': validated_data['is_default']
                 }
             )
