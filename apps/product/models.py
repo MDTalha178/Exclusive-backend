@@ -8,6 +8,7 @@ import uuid
 from django.db import models
 
 # Create your models here.
+from apps.account.models import UserAddress
 from apps.authentication.models import User
 from apps.common.constant import AWS_BASE_URL
 
@@ -99,3 +100,31 @@ class WishListItem(models.Model):
         db_table = "wishlist_item"
 
 
+class Order(models.Model):
+    PREPARING = 'Preparing order'
+    RECEIVED_AT_COURIER_OFFICE = 'Order received at courier office'
+    SHIPPED = 'Order shipped'
+    DELIVERED = 'Delivered'
+
+    ORDER_STATUS_CHOICES = [
+        (PREPARING, 'Preparing order'),
+        (RECEIVED_AT_COURIER_OFFICE, 'Order received at courier office'),
+        (SHIPPED, 'Order shipped'),
+        (DELIVERED, 'Delivered'),
+    ]
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    order_id = models.CharField(max_length=1024, null=False, blank=False)
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, null=True, blank=True, related_name='user_order_set')
+    product = models.ForeignKey(
+        Product, on_delete=models.SET_NULL, null=True, blank=True, related_name='order_product_set'
+    )
+    quantity = models.IntegerField(default=1)
+    created_at = models.DateTimeField(auto_now_add=True)
+    address = models.ForeignKey(
+        UserAddress, on_delete=models.SET_NULL, null=True, blank=True, related_name='order_address_set'
+    )
+    order_status = models.CharField(max_length=1024, choices=ORDER_STATUS_CHOICES, default=PREPARING)
+
+    class Meta:
+        db_table = 'order'

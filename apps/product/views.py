@@ -12,9 +12,9 @@ from rest_framework.parsers import JSONParser, FormParser, MultiPartParser
 # Create your views here.
 from apps.common.permissions import IsTokenValid
 from apps.common.utils import get_total_bill
-from apps.product.models import Product, ProductCategory, CartItem, WishListItem
+from apps.product.models import Product, ProductCategory, CartItem, WishListItem, Order
 from apps.product.serializer import GetProductSerializer, CreateProductSerializer, ProductCategorySerializer, \
-    AddToCartSerializer, GetCartItemSerializer, WishListItemSerializer, GetWishListItemSerializer
+    AddToCartSerializer, GetCartItemSerializer, WishListItemSerializer, GetWishListItemSerializer, OrderPlaceSerializer
 
 
 class ProductViewSet(ModelViewSet):
@@ -27,6 +27,7 @@ class ProductViewSet(ModelViewSet):
     parser_classes = (JSONParser, FormParser, MultiPartParser)
     filter_backends = [filters.SearchFilter]
     search_fields = ['product_name', 'product_category__name']
+
     # permission_classes = (IsAuthenticated, IsTokenValid,)
 
     def get_queryset(self):
@@ -192,3 +193,20 @@ class WishListViewSet(ModelViewSet):
         if serializer:
             return custom_response(status=status.HTTP_200_OK, detail=None, data=serializer.data)
         return custom_error_response(status=status.HTTP_204_NO_CONTENT, detail=None, data=None)
+
+
+class OrderPlaceViewSet(ModelViewSet):
+    """
+    this class is used to place and order
+    """
+    http_method_names = ('post', 'get', )
+    serializer_class = OrderPlaceSerializer
+    queryset = Order
+    permission_classes = (IsAuthenticated, IsTokenValid,)
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data, context={'login_user_id': request.user})
+        if serializer.is_valid():
+            serializer.save()
+            return custom_response(status=status.HTTP_200_OK, detail=None, data={'username': request.user.first_name})
+        return custom_error_response(status=status.HTTP_400_BAD_REQUEST, detail=None, data=serializer.errors)

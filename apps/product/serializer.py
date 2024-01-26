@@ -1,10 +1,12 @@
 import logging
 from datetime import datetime
 from rest_framework import serializers
-from django.db.models import F
+from django.db import transaction
 
+from apps.account.models import UserAddress
 from apps.common.constant import AWS_BASE_URL
-from apps.product.models import Product, ProductImages, ProductCategory, CartItem, WishListItem
+from apps.common.utils import get_order_id
+from apps.product.models import Product, ProductImages, ProductCategory, CartItem, WishListItem, Order
 
 
 class GetProductCategoryDetails(serializers.ModelSerializer):
@@ -119,10 +121,14 @@ class AddToCartSerializer(serializers.ModelSerializer):
             if not login_user:
                 raise serializers.ValidationError({'UnAuthorized': 'Please to login add item in to cart'})
             validated_data['user_id'] = login_user.id
-            cart_obj, _ = CartItem.objects.update_or_create(
-                product_id=validated_data['product'].id, user_id=login_user.id,
-                defaults={'quantity': validated_data['quantity']}
-            )
+            if int(validated_data['quantity']) == 0:
+                CartItem.objects.filter(product_id=validated_data['product'].id, user_id=login_user.id).delete()
+                cart_obj = CartItem.objects.filter(user_id=login_user.id).first()
+            else:
+                cart_obj, _ = CartItem.objects.update_or_create(
+                    product_id=validated_data['product'].id, user_id=login_user.id,
+                    defaults={'quantity': validated_data['quantity']}
+                )
             return cart_obj
         except Exception as e:
             logging.error(e)
@@ -251,3 +257,51 @@ class GetWishListItemSerializer(serializers.ModelSerializer):
         model = WishListItem
         fields = ('id', 'product_details',)
 
+
+class OrderPlaceSerializer(serializers.ModelSerializer):
+    product = serializers.PrimaryKeyRelatedField(
+        many=True,
+        required=True,
+        queryset=Product.objects.filter()
+    )
+    sub_total = serializers.CharField(required=True, allow_null=False, allow_blank=False)
+    total_billed = serializers.CharField(required=True, allow_blank=False, allow_null=False)
+    shipping_fee = serializers.CharField(required=True, allow_null=False, allow_blank=False)
+    mode_of_payment = serializers.CharField(required=True, allow_blank=False, allow_null=False)
+    coupon_name = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+
+    def validate(self, attrs):
+        if attrs.get('sub_total') == 0:
+            raise serializers.ValidationError({'BILLED_PRICE': 'Billed price is invalid'})
+        return attrs
+
+    @transaction.atomic
+    def create(self, validated_data):
+        login_user_id = None
+        order_obj = None
+        if 'login_user_id' in self.context and self.context['login_user_id']:
+            login_user_id = self.context['login_user_id'].id
+        try:
+            if not login_user_id:
+                raise serializers.ValidationError({'UNAUTHORIZED_USER': "Un Authorized user"})
+            user_address = UserAddress.objects.filter(user_id=login_user_id, is_default=True).first()
+            if not user_address:
+                raise serializers.ValidationError({'ADDRESS': "PLEASE_ADD_ADDRESS"})
+            for product in validated_data['product']:
+                order_id = get_order_id()
+                cart_item = CartItem.objects.filter(product_id=product.id, user_id=login_user_id).first()
+                quantity = cart_item.quantity if cart_item else 1
+                order_obj = Order.objects.create(
+                    user_id=login_user_id, product_id=product.id,
+                    quantity=quantity, order_id=order_id,
+                    address_id=user_address.id
+                )
+            CartItem.objects.filter(user_id=login_user_id).delete()
+            return order_obj
+        except Exception as e:
+            logging.error(e)
+            raise serializers.ValidationError(e)
+
+    class Meta:
+        model = Order
+        fields = ('product', 'sub_total', 'total_billed', 'shipping_fee', 'mode_of_payment', 'coupon_name')

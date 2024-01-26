@@ -1,7 +1,7 @@
 import random
 from django.core.mail import EmailMessage
 from django.template.loader import get_template
-from apps.product.models import CartItem
+from apps.product.models import CartItem, Order
 from exclusive import settings
 
 
@@ -68,3 +68,13 @@ def common_send_email(email_data, template):
 
 def generate_otp():
     return ''.join(str(random.choice(range(10))) for _ in range(6))
+
+
+def get_order_id():
+    """
+    this method is used to return an order id
+    """
+    order_id = 'ORD_ID' + generate_otp()
+    if not Order.objects.filter(order_id=order_id).exists():
+        return order_id
+    return get_order_id()
