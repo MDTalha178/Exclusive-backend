@@ -125,7 +125,7 @@ class CartViewSet(ModelViewSet):
         login_user = self.request.user
         queryset = self.queryset.objects.filter(user_id=login_user.id).annotate(
             product_image_url=F('product__product_images_set__product_images')
-        )
+        ).order_by('-created_at')
         return queryset
 
     def create(self, request, *args, **kwargs):
@@ -135,7 +135,10 @@ class CartViewSet(ModelViewSet):
         serializer = self.serializer_class(data=request.data, context={'user': request.user})
         if serializer.is_valid():
             cart_obj = serializer.save()
-            data = GetCartItemSerializer(cart_obj, many=False).data
+            cart_obj = CartItem.objects.filter(user_id=request.user.id).last()
+            data = None
+            if cart_obj:
+                data = GetCartItemSerializer(cart_obj, many=False).data
             return custom_response(status=status.HTTP_201_CREATED, detail=None, data=data)
         return custom_error_response(status=status.HTTP_400_BAD_REQUEST, detail=None, data=serializer.errors)
 
@@ -145,7 +148,7 @@ class CartViewSet(ModelViewSet):
         """
         total_bill = get_total_bill(request.user.id)
         serializer = GetCartItemSerializer(self.get_queryset(), context={'user': self.request.user,
-                                                                         'total_billed': total_bill}, many=True)
+                                                               'total_billed': total_bill}, many=True)
         if serializer:
             return custom_response(status=status.HTTP_200_OK, detail=None, data=serializer.data)
         return custom_error_response(status=status.HTTP_204_NO_CONTENT, detail=None, data=None)

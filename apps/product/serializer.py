@@ -129,7 +129,7 @@ class AddToCartSerializer(serializers.ModelSerializer):
                     product_id=validated_data['product'].id, user_id=login_user.id,
                     defaults={'quantity': validated_data['quantity']}
                 )
-            return cart_obj
+            return login_user
         except Exception as e:
             logging.error(e)
             raise serializers.ValidationError(e)
