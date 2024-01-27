@@ -5,8 +5,8 @@ from django.db import transaction
 
 from apps.account.models import UserAddress
 from apps.common.constant import AWS_BASE_URL
-from apps.common.utils import get_order_id
-from apps.product.models import Product, ProductImages, ProductCategory, CartItem, WishListItem, Order
+from apps.common.utils import get_order_id, get_combine_order_id
+from apps.product.models import Product, ProductImages, ProductCategory, CartItem, WishListItem, Order, OrderBill
 
 
 class GetProductCategoryDetails(serializers.ModelSerializer):
@@ -287,6 +287,7 @@ class OrderPlaceSerializer(serializers.ModelSerializer):
             user_address = UserAddress.objects.filter(user_id=login_user_id, is_default=True).first()
             if not user_address:
                 raise serializers.ValidationError({'ADDRESS': "PLEASE_ADD_ADDRESS"})
+            combine_order_id = get_combine_order_id()
             for product in validated_data['product']:
                 order_id = get_order_id()
                 cart_item = CartItem.objects.filter(product_id=product.id, user_id=login_user_id).first()
@@ -294,7 +295,16 @@ class OrderPlaceSerializer(serializers.ModelSerializer):
                 order_obj = Order.objects.create(
                     user_id=login_user_id, product_id=product.id,
                     quantity=quantity, order_id=order_id,
-                    address_id=user_address.id
+                    address_id=user_address.id,
+                    combine_order_id=combine_order_id
+                )
+                total_bill = product.price * quantity
+                total_billed = total_bill if int(validated_data['sub_total']) > 300 else total_bill + 40
+                is_paid = False if validated_data['mode_of_payment'] == 'COD' else True
+                OrderBill.objects.create(
+                    order_id=order_obj.id, mode_of_payment=OrderBill.COD,
+                    delivery_charge=validated_data['shipping_fee'],
+                    single_product_price=total_bill, total_billed=total_billed, is_paid=is_paid
                 )
             CartItem.objects.filter(user_id=login_user_id).delete()
             return order_obj
@@ -305,3 +315,30 @@ class OrderPlaceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
         fields = ('product', 'sub_total', 'total_billed', 'shipping_fee', 'mode_of_payment', 'coupon_name')
+
+
+class GetOrderBillDetails(serializers.ModelSerializer):
+    class Meta:
+        model = OrderBill
+        fields = '__all__'
+
+
+class GetOrderListSerializer(serializers.ModelSerializer):
+    order_bill = serializers.SerializerMethodField()
+    product = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_order_bill(obj):
+        order_bill_details = None
+        order_bill_details_obj = OrderBill.objects.filter(order_id=obj.id).first()
+        if order_bill_details_obj:
+            order_bill_details = GetOrderBillDetails(order_bill_details_obj, many=False).data
+        return order_bill_details
+
+    @staticmethod
+    def get_product(obj):
+        return GetProductSerializer(obj.product, many=False).data
+
+    class Meta:
+        model = Order
+        fields = ('id', 'order_id', 'product', 'quantity', 'order_status', 'order_bill',)

@@ -1,4 +1,6 @@
 import random
+import uuid
+
 from django.core.mail import EmailMessage
 from django.template.loader import get_template
 from apps.product.models import CartItem, Order
@@ -78,3 +80,10 @@ def get_order_id():
     if not Order.objects.filter(order_id=order_id).exists():
         return order_id
     return get_order_id()
+
+
+def get_combine_order_id():
+    combine_order_id = uuid.uuid4()
+    if not Order.objects.filter(combine_order_id=combine_order_id).exists():
+        return combine_order_id
+    return get_combine_order_id()

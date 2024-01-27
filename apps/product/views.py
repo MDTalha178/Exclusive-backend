@@ -14,7 +14,8 @@ from apps.common.permissions import IsTokenValid
 from apps.common.utils import get_total_bill
 from apps.product.models import Product, ProductCategory, CartItem, WishListItem, Order
 from apps.product.serializer import GetProductSerializer, CreateProductSerializer, ProductCategorySerializer, \
-    AddToCartSerializer, GetCartItemSerializer, WishListItemSerializer, GetWishListItemSerializer, OrderPlaceSerializer
+    AddToCartSerializer, GetCartItemSerializer, WishListItemSerializer, GetWishListItemSerializer, OrderPlaceSerializer, \
+    GetOrderListSerializer
 
 
 class ProductViewSet(ModelViewSet):
@@ -148,7 +149,7 @@ class CartViewSet(ModelViewSet):
         """
         total_bill = get_total_bill(request.user.id)
         serializer = GetCartItemSerializer(self.get_queryset(), context={'user': self.request.user,
-                                                               'total_billed': total_bill}, many=True)
+                                                                         'total_billed': total_bill}, many=True)
         if serializer:
             return custom_response(status=status.HTTP_200_OK, detail=None, data=serializer.data)
         return custom_error_response(status=status.HTTP_204_NO_CONTENT, detail=None, data=None)
@@ -202,10 +203,14 @@ class OrderPlaceViewSet(ModelViewSet):
     """
     this class is used to place and order
     """
-    http_method_names = ('post', 'get', )
+    http_method_names = ('post', 'get',)
     serializer_class = OrderPlaceSerializer
     queryset = Order
     permission_classes = (IsAuthenticated, IsTokenValid,)
+
+    def get_queryset(self):
+        queryset = self.queryset.objects.filter(user_id=self.request.user.id)
+        return queryset
 
     def create(self, request, *args, **kwargs):
         serializer = self.serializer_class(data=request.data, context={'login_user_id': request.user})
@@ -213,3 +218,19 @@ class OrderPlaceViewSet(ModelViewSet):
             serializer.save()
             return custom_response(status=status.HTTP_200_OK, detail=None, data={'username': request.user.first_name})
         return custom_error_response(status=status.HTTP_400_BAD_REQUEST, detail=None, data=serializer.errors)
+
+    def list(self, request, *args, **kwargs):
+        serializer = GetOrderListSerializer(self.get_queryset(), context={'login_user_id': request.user.id}, many=True)
+        if serializer:
+            return custom_response(status=status.HTTP_200_OK, detail=None, data=serializer.data)
+        return custom_error_response(status=status.HTTP_204_NO_CONTENT, detail=None, data=None)
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if not instance:
+            return custom_error_response(
+                status=status.HTTP_400_BAD_REQUEST, detail=None, data={'INVALID_ID': 'ORDER_ID_INVALID'})
+        serializer = GetOrderListSerializer(instance, context={'login_user_id': request.user.id}, many=False)
+        if serializer:
+            return custom_response(status=status.HTTP_200_OK, detail=None, data=serializer.data)
+        return custom_response(status=status.HTTP_204_NO_CONTENT, detail=None, data=None)

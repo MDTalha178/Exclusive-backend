@@ -124,7 +124,28 @@ class Order(models.Model):
     address = models.ForeignKey(
         UserAddress, on_delete=models.SET_NULL, null=True, blank=True, related_name='order_address_set'
     )
+    combine_order_id = models.CharField(max_length=526, null=True, blank=True)
     order_status = models.CharField(max_length=1024, choices=ORDER_STATUS_CHOICES, default=PREPARING)
 
     class Meta:
         db_table = 'order'
+
+
+class OrderBill(models.Model):
+    COD = 'Cash on Delivery'
+    BANK = 'Bank'
+    MODE_OF_PAYMENT = [
+        (COD, 'Cash on Delivery'),
+        (BANK, 'Bank')
+    ]
+    order = models.ForeignKey(
+        Order, on_delete=models.SET_NULL, null=True, blank=True, related_name='order_bill_order'
+    )
+    mode_of_payment = models.CharField(max_length=1024, choices=MODE_OF_PAYMENT, null=True, blank=True, default=None)
+    delivery_charge = models.IntegerField(default=0)
+    single_product_price = models.IntegerField(default=0)
+    total_billed = models.IntegerField(default=0)
+    is_paid = models.BooleanField(default=False)
+
+    class Meta:
+        db_table = 'order_bill'
