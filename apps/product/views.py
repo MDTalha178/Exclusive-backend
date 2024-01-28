@@ -179,7 +179,9 @@ class WishListViewSet(ModelViewSet):
         this method is used to get wishlist data
         """
         queryset = self.queryset.objects.select_related('product').filter(
-            user_id=self.request.user.id).order_by('-created_at')
+            user_id=self.request.user.id).annotate(
+            product_image_url=F('product__product_images_set__product_images')
+        ).order_by('-created_at')
         return queryset
 
     def create(self, request, *args, **kwargs):
@@ -209,7 +211,9 @@ class OrderPlaceViewSet(ModelViewSet):
     permission_classes = (IsAuthenticated, IsTokenValid,)
 
     def get_queryset(self):
-        queryset = self.queryset.objects.filter(user_id=self.request.user.id)
+        queryset = self.queryset.objects.filter(user_id=self.request.user.id).annotate(
+            product_image_url=F('product__product_images_set__product_images')
+        )
         return queryset
 
     def create(self, request, *args, **kwargs):

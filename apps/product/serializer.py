@@ -4,6 +4,7 @@ from rest_framework import serializers
 from django.db import transaction
 
 from apps.account.models import UserAddress
+from apps.account.serializer import GetUserAddressSerializer
 from apps.common.constant import AWS_BASE_URL
 from apps.common.utils import get_order_id, get_combine_order_id
 from apps.product.models import Product, ProductImages, ProductCategory, CartItem, WishListItem, Order, OrderBill
@@ -242,6 +243,14 @@ class GetWishListItemSerializer(serializers.ModelSerializer):
     this serializer class is used to get wishlist data
     """
     product_details = serializers.SerializerMethodField()
+    product_image_url = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_product_image_url(obj):
+        product_image_url = None
+        if hasattr(obj, obj.product_image_url):
+            product_image_url = AWS_BASE_URL + str(obj.product_image_url)
+        return product_image_url
 
     @staticmethod
     def get_product_details(obj):
@@ -255,7 +264,7 @@ class GetWishListItemSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = WishListItem
-        fields = ('id', 'product_details',)
+        fields = ('id', 'product_details', 'product_image_url',)
 
 
 class OrderPlaceSerializer(serializers.ModelSerializer):
@@ -326,6 +335,32 @@ class GetOrderBillDetails(serializers.ModelSerializer):
 class GetOrderListSerializer(serializers.ModelSerializer):
     order_bill = serializers.SerializerMethodField()
     product = serializers.SerializerMethodField()
+    product_image_url = serializers.SerializerMethodField()
+    shipping_address = serializers.SerializerMethodField()
+    full_name = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_full_name(obj):
+        if obj.user.first_name and obj.user.last_name:
+            full_name = obj.user.last_name + " " + obj.user.last_name
+        else:
+            full_name = obj.user.username
+        return full_name
+
+    @staticmethod
+    def get_shipping_address(obj):
+        shipping_address = None
+        address_obj = UserAddress.objects.filter(id=obj.address.id).first()
+        if address_obj:
+            shipping_address = GetUserAddressSerializer(address_obj, many=False).data
+        return shipping_address
+
+    @staticmethod
+    def get_product_image_url(obj):
+        product_image_url = None
+        if hasattr(obj, 'product_image_url'):
+            product_image_url = AWS_BASE_URL + str(obj.product_image_url)
+        return product_image_url
 
     @staticmethod
     def get_order_bill(obj):
@@ -341,4 +376,5 @@ class GetOrderListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Order
-        fields = ('id', 'order_id', 'product', 'quantity', 'order_status', 'order_bill',)
+        fields = ('id', 'order_id', 'product', 'quantity', 'order_status',
+                  'order_bill', 'product_image_url', 'created_at', 'shipping_address', 'full_name')
