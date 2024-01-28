@@ -248,7 +248,7 @@ class GetWishListItemSerializer(serializers.ModelSerializer):
     @staticmethod
     def get_product_image_url(obj):
         product_image_url = None
-        if hasattr(obj, obj.product_image_url):
+        if hasattr(obj, 'product_image_url'):
             product_image_url = AWS_BASE_URL + str(obj.product_image_url)
         return product_image_url
 
