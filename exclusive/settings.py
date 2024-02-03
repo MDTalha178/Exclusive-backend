@@ -34,6 +34,8 @@ print('inntt')
 # Application definition
 
 INSTALLED_APPS = [
+    'channels',
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -48,7 +50,8 @@ INSTALLED_APPS = [
     'drf_yasg',
     'apps.authentication',
     'apps.product',
-    'apps.account'
+    'apps.account',
+    'apps.notification'
 ]
 
 MIDDLEWARE = [
@@ -80,7 +83,16 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'exclusive.wsgi.application'
+ASGI_APPLICATION = 'exclusive.asgi.application'
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("localhost", 6379)],
+        },
+    },
+}
 
 
 # Database
