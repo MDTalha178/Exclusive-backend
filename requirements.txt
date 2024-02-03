@@ -14,3 +14,7 @@ drf-yasg==1.21.7
 boto3==1.33.10
 django-storages==1.14.2
 djangorestframework-simplejwt==5.3.1
+channels==3.0.4
+channels-redis==4.2.0
+
+
