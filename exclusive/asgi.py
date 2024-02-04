@@ -16,9 +16,10 @@ from channels.routing import ProtocolTypeRouter, URLRouter
 from apps.notification import routing
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'exclusive.settings')
-
+application = get_asgi_application()
+app = application
 application = ProtocolTypeRouter({
-    'http': get_asgi_application(),
+    'http': app,
     'websocket': AuthMiddlewareStack(URLRouter(
         routing.ws_pattern
     ))
