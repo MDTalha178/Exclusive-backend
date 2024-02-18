@@ -4,8 +4,9 @@ from django.shortcuts import render
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 
-from apps.account.models import UserAddress
-from apps.account.serializer import UserProfileSerializer, UserAddressSerializer, GetUserAddressSerializer
+from apps.account.models import UserAddress, UserSetting
+from apps.account.serializer import UserProfileSerializer, UserAddressSerializer, GetUserAddressSerializer, \
+    UserSettingSerializer, AddUserSettingSerializer
 from apps.authentication.commonViewSet import ModelViewSet, custom_response, custom_error_response
 from apps.common.permissions import IsTokenValid
 
@@ -71,3 +72,30 @@ class UserAddressViewSet(ModelViewSet):
         if serializer:
             return custom_response(status=status.HTTP_200_OK, detail=None, data=serializer.data)
         return custom_error_response(status=status.HTTP_204_NO_CONTENT, detail=None, data=None)
+
+
+class UserSettingViewSet(ModelViewSet):
+    http_method_names = ('get', 'post')
+    queryset = UserSetting
+    serializer_class = UserSettingSerializer
+    permission_classes = (IsAuthenticated, IsTokenValid,)
+
+    def get_queryset(self):
+        queryset = self.queryset.objects.filter(user_id=self.request.user.id)
+        return queryset
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.serializer_class(instance, many=False)
+        if serializer:
+            return custom_response(status=status.HTTP_200_OK, detail=None, data=serializer.data)
+        return custom_error_response(status=status.HTTP_204_NO_CONTENT, detail=None, data=None)
+
+    def create(self, request, *args, **kwargs):
+        login_user_id = self.request.user.id
+        serializer = AddUserSettingSerializer(
+            data=request.data, context={'login_user_id': login_user_id})
+        if serializer.is_valid():
+            serializer.save()
+            return custom_response(status=status.HTTP_200_OK, detail=None, data=serializer.data)
+        return custom_error_response(status=status.HTTP_400_BAD_REQUEST, detail=None, data=serializer.errors)

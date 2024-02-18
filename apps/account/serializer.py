@@ -5,7 +5,7 @@ import logging
 
 from rest_framework import serializers
 
-from apps.account.models import UserProfile, UserAddress
+from apps.account.models import UserProfile, UserAddress, UserSetting
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
@@ -69,7 +69,7 @@ class UserAddressSerializer(serializers.ModelSerializer):
                     'latitude': validated_data['latitude'], 'longitude': validated_data['longitude'], 'street_address':
                         validated_data['street_address'], 'town': validated_data['town'],
                     'phone': validated_data['phone'],
-                    'landmark':validated_data['landmark'],
+                    'landmark': validated_data['landmark'],
                     'pincode': validated_data['pincode'], 'is_default': validated_data['is_default']
                 }
             )
@@ -84,7 +84,33 @@ class UserAddressSerializer(serializers.ModelSerializer):
 
 
 class GetUserAddressSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = UserAddress
         fields = '__all__'
+
+
+class UserSettingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserSetting
+        fields = '__all__'
+
+
+class AddUserSettingSerializer(serializers.ModelSerializer):
+    is_offer_notification = serializers.BooleanField(default=True)
+    is_all_notification = serializers.BooleanField(default=True)
+    is_payment_secure = serializers.BooleanField(default=False)
+
+    def create(self, validated_data):
+        login_user_id = self.context['login_user_id']
+        if not login_user_id:
+            raise serializers.ValidationError({'UnAuthorized': "Please login to verify"})
+        obj, _ = UserSetting.objects.update_or_create(user_id=login_user_id, defaults={
+            'is_offer_notification': validated_data['is_offer_notification'],
+            'is_all_notification': validated_data['is_all_notification'],
+            'is_payment_secure': validated_data['is_payment_secure']
+        })
+        return obj
+
+    class Meta:
+        model = UserSetting
+        fields = ('is_offer_notification', 'is_all_notification', 'is_payment_secure',)

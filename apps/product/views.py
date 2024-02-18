@@ -133,7 +133,11 @@ class CartViewSet(ModelViewSet):
         """"
         this method is used to create item into cart
         """
-        serializer = self.serializer_class(data=request.data, context={'user': request.user})
+        is_cart = False
+        if 'is_cart' in self.request.query_params and self.request.query_params['is_cart']:
+            is_cart = True
+        serializer = self.serializer_class(
+            data=request.data, context={'user': request.user, 'is_cart': is_cart})
         if serializer.is_valid():
             cart_obj = serializer.save()
             cart_obj = CartItem.objects.filter(user_id=request.user.id).last()

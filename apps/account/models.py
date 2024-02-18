@@ -49,3 +49,13 @@ class UserAddress(models.Model):
         """
         db_table = 'user_address'
 
+
+class UserSetting(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_setting_set')
+    is_offer_notification = models.BooleanField(default=True)
+    is_all_notification = models.BooleanField(default=True)
+    is_payment_secure = models.BooleanField(default=False)
+    is_pin_set = models.BooleanField(default=False)
+
+    class Meta:
+        db_table = 'user_setting'

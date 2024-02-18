@@ -117,12 +117,26 @@ class AddToCartSerializer(serializers.ModelSerializer):
         """
         try:
             login_user = None
+            is_cart = self.context['is_cart']
             if 'user' in self.context and self.context['user']:
                 login_user = self.context['user']
             if not login_user:
                 raise serializers.ValidationError({'UnAuthorized': 'Please to login add item in to cart'})
             validated_data['user_id'] = login_user.id
-            if int(validated_data['quantity']) == 0:
+            if is_cart:
+                product_id = validated_data['product_id'].id
+                user_id = login_user.id
+                cart_obj, created = CartItem.objects.get_or_create(
+                    product_id=product_id, user_id=user_id,
+                    defaults={'quantity': validated_data['quantity']}
+                )
+                if not created:
+                    cart_obj.quantity += 1
+                    cart_obj.save()
+                    WishListItem.objects.filter(
+                        product_id=product_id, user_id=user_id
+                    ).delete()
+            elif int(validated_data['quantity']) == 0:
                 CartItem.objects.filter(product_id=validated_data['product'].id, user_id=login_user.id).delete()
                 cart_obj = CartItem.objects.filter(user_id=login_user.id).first()
             else:
